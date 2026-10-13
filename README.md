@@ -1,4 +1,4 @@
-<p align="center"><img src="assets/banner.png" width="800" alt="Office Brains — origami brain of Word, Excel and PowerPoint"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/DERYK-RYLOY/office-brains/main/assets/banner.png" width="800" alt="Office Brains — origami brain of Word, Excel and PowerPoint"></p>
 
 # OFFICE BRAINS
 
@@ -6,7 +6,7 @@
 `brains` compiles it into clean, Transitional, forensically-quiet
 `.docx` / `.xlsx` / `.pptx`.
 
-[![CI](https://github.com/DERYK-RYLOY/office-brains/actions/workflows/ci/badge.svg)](https://github.com/DERYK-RYLOY/office-brains/actions)
+[![CI](https://github.com/DERYK-RYLOY/office-brains/actions/workflows/ci.yml/badge.svg)](https://github.com/DERYK-RYLOY/office-brains/actions)
 ![MIT](https://img.shields.io/badge/license-MIT-green)
 ![v0.1.0](https://img.shields.io/badge/version-v0.1.0-blue)
 ![Go](https://img.shields.io/badge/go-1.22%2B_stdlib--only-00ADD8)
