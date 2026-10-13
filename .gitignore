@@ -1,0 +1,36 @@
+# Binaries (root only - anchored so cmd/brains/ sources are never matched)
+/brains
+/brains.exe
+/brains-test
+*.exe
+
+# Build cache / test cache (go tooling, not ours)
+# (module cache lives outside the repo)
+
+# Local outputs - never commit generated files
+out.docx
+out.xlsx
+out.pptx
+*.forged.docx
+*_test_out.*
+
+# Golden blanks may be licensed - never commit real Microsoft files
+golden/*.docx
+golden/*.xlsx
+golden/*.pptx
+!golden/.gitkeep
+
+# Learned lineage can contain company names - keep local
+*.dna.json
+dna.json
+
+# Oracle portable python + wheels - auto-downloaded, never commit (~100MB)
+.oracle/
+pyembed.zip
+get-pip.py
+
+# OS / editor noise
+Thumbs.db
+.DS_Store
+.idea/
+.vscode/

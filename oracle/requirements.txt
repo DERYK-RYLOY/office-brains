@@ -1,0 +1,9 @@
+# Oracle squad - strict independent validators for Office Brains output.
+# Installed automatically by `brains oracle --setup` into .oracle/ (isolated,
+# no system Python touched). Pinned for reproducibility.
+Pillow==12.3.0
+python-pptx==1.0.2
+openpyxl==3.1.5
+XlsxWriter==3.2.9
+python-docx==1.2.0
+lxml==6.0.1

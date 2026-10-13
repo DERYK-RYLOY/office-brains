@@ -1,0 +1,1 @@
+{"doc": {"sections": [{"blocks": [{"t": "h1", "txt": "Sales"}, {"labels": ["A", "B", "C"], "series": [{"name": "Q1", "values": [100, 200, 150]}, {"name": "Q2", "values": [120, 180, 200]}], "t": "chart", "title": "Revenue"}], "name": "Sales"}]}, "oir": "1.1"}

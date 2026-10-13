@@ -1,0 +1,42 @@
+{
+  "oir": "1.1",
+  "meta": {"profile": "corporate", "company": "Contoso", "author": "Deryk Ryloy"},
+  "doc": {
+    "sections": [
+      {"id": "cover", "name": "Cover", "blocks": [
+        {"t": "h1", "txt": "Annual Report 2026"},
+        {"t": "p", "txt": "Revenue climbed across every region. North led at 12 percent growth."}
+      ]},
+      {"id": "s-table", "name": "Regions", "blocks": [
+        {"t": "h1", "txt": "Regional Breakdown"},
+        {"t": "table", "rows": [
+          ["Region", "Q1", "Q4"],
+          ["North", 100, 170],
+          ["South", 80, 110],
+          ["East", 50, 65],
+          ["West", 40, 39]
+        ]}
+      ]},
+      {"id": "s-img", "name": "Seal", "blocks": [
+        {"t": "h1", "txt": "Company Seal"},
+        {"t": "image", "img": "C:\\Users\\RYLOY\\AppData\\Local\\Temp\\red1x1.png", "alt": "red dot", "w": 3.0}
+      ]},
+      {"id": "s-bar", "name": "Bar", "blocks": [
+        {"t": "chart", "kind": "bar", "title": "Revenue by Region",
+         "labels": ["North", "South", "East", "West"],
+         "series": [{"name": "Q1", "values": [100, 80, 50, 40]}, {"name": "Q4", "values": [170, 110, 65, 39]}]}
+      ]},
+      {"id": "s-line", "name": "Trend", "blocks": [
+        {"t": "chart", "kind": "line", "title": "North Trend",
+         "labels": ["Q1", "Q2", "Q3", "Q4"],
+         "series": [{"name": "North", "values": [100, 150, 130, 170]}]}
+      ]},
+      {"id": "s-pie", "name": "Share", "blocks": [
+        {"t": "chart", "kind": "pie", "title": "Share Pie",
+         "labels": ["North", "South", "East", "West"],
+         "series": [{"name": "Share", "values": [550, 375, 230, 159]}]},
+        {"t": "p", "txt": "North owns the largest share."}
+      ]}
+    ]
+  }
+}

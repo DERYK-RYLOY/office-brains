@@ -1,0 +1,16 @@
+{
+  "oir": "1.0",
+  "meta": { "profile": "m365", "author": "User" },
+  "doc": {
+    "sections": [
+      {
+        "name": "Q4",
+        "blocks": [
+          { "t": "h1", "txt": "Q4 Financials" },
+          { "t": "p", "txt": "Bootstrap spec gate test. No file is written in Phase 0." },
+          { "t": "table", "rows": [["Product", "Rev"], ["A", 100], ["B", 250]] }
+        ]
+      }
+    ]
+  }
+}

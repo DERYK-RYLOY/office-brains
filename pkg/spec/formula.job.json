@@ -1,0 +1,20 @@
+{
+  "oir": "1.0",
+  "meta": { "profile": "m365", "author": "User" },
+  "doc": {
+    "sections": [
+      {
+        "name": "Sales",
+        "blocks": [
+          { "t": "h1", "txt": "Sales + Formulas" },
+          { "t": "table", "rows": [
+            ["Product", "Q1", "Q2", "Total"],
+            ["A", 100, 150, {"f": "SUM(B2:C2)", "v": 250}],
+            ["B", 200, 250, {"f": "SUM(B3:C3)", "v": 450}],
+            ["Total", {"f": "SUM(B2:B3)", "v": 300}, {"f": "SUM(C2:C3)", "v": 400}, {"f": "SUM(D2:D3)", "v": 700}]
+          ]}
+        ]
+      }
+    ]
+  }
+}

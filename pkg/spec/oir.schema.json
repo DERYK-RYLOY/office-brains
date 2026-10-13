@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://office-brains/oir.schema.json",
+  "title": "OIR 1.1 - Office Intermediate Representation",
+  "type": "object",
+  "required": ["oir", "doc"],
+  "properties": {
+    "oir": { "type": "string", "enum": ["1.0", "1.1"] },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "profile": { "type": "string", "enum": ["m365", "corporate", "clean"] },
+        "company": { "type": "string" },
+        "author": { "type": "string" },
+        "header": { "type": "string" },
+        "footer": { "type": "string" }
+      }
+    },
+    "doc": {
+      "type": "object",
+      "required": ["sections"],
+      "properties": {
+        "sections": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "type": "object",
+            "required": ["blocks"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "blocks": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["t"],
+                  "properties": {
+                    "id": { "type": "string" },
+                    "t": { "type": "string", "enum": ["h1", "h2", "p", "bullet", "code", "image", "chart", "table"] },
+                    "txt": { "type": "string" },
+                    "rows": {
+                      "type": "array",
+                      "minItems": 1,
+                      "maxItems": 500,
+                      "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 20,
+                        "items": { "type": ["string", "number", "boolean", "null", "object"] }
+                      }
+                    },
+                    "merge": { "type": "array", "items": { "type": "string" } },
+                    "img": { "type": "string" },
+                    "alt": { "type": "string" },
+                    "w": { "type": "number" },
+                    "title": { "type": "string" },
+                    "kind": { "type": "string", "enum": ["bar", "line", "pie"] },
+                    "labels": { "type": "array", "items": { "type": "string" }, "maxItems": 20 },
+                    "series": {
+                      "type": "array",
+                      "maxItems": 8,
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": { "type": "string" },
+                          "values": { "type": "array", "items": { "type": "number" } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
