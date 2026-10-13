@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/you/office-brains/internal/verify"
+	"github.com/DERYK-RYLOY/office-brains/internal/verify"
 )
 
 func cmdServe(args []string) {

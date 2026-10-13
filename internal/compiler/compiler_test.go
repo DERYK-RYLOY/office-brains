@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/you/office-brains/internal/forger"
-	"github.com/you/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/forger"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
 )
 
 func testSpec(t *testing.T) *oir.Spec {

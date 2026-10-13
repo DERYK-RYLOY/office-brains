@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/you/office-brains/internal/compiler"
-	"github.com/you/office-brains/internal/layout"
-	"github.com/you/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/compiler"
+	"github.com/DERYK-RYLOY/office-brains/internal/layout"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
 )
 
 // Render builds a full HTML doc for spec+docType.

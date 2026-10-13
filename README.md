@@ -1,11 +1,45 @@
+<p align="center"><img src="assets/banner.png" width="800" alt="Office Brains — origami brain of Word, Excel and PowerPoint"></p>
+
 # OFFICE BRAINS
 
-The last Office CLI that ever needs to exist. AI writes intent (OIR JSON),
-`brains` compiles it to clean, Transitional, forensically-quiet
-`.docx` / `.xlsx` / `.pptx` — stdlib Go only, no network, no daemons.
+**The document compiler for AI agents.** You write JSON intent —
+`brains` compiles it into clean, Transitional, forensically-quiet
+`.docx` / `.xlsx` / `.pptx`.
 
-> Status: v0.1.0 bootstrap. Not published. Nothing here leaves your machine
-> unless you push it yourself.
+![CI](https://github.com/DERYK-RYLOY/office-brains/actions/workflows/ci/badge.svg)
+![MIT](https://img.shields.io/badge/license-MIT-green)
+![v0.1.0](https://img.shields.io/badge/version-v0.1.0-blue)
+![Go](https://img.shields.io/badge/go-1.22%2B_stdlib--only-00ADD8)
+![Platform](https://img.shields.io/badge/platform-windows_linux-lightgrey)
+
+> ⭐ If this builds your documents, star the repo — it keeps the project alive.
+
+## Why it exists
+
+AI-written Office files look fake, break on open, or silently drop content.
+Office Brains fixes the architecture, not the prompt:
+
+- **OIR compiler** — agents describe *what* (JSON), never *how* (XML).
+- **Forensic forge** — real author/company/timestamps, zero `python-docx`-style traces.
+- **Native everything** — tables, `SUM` formulas with cached values, bar/line/pie charts, images, merges, multisheet/multislide.
+- **Deterministic** — `--frozen` makes the same spec byte-identical, every run.
+- **Oracle squad** — every file re-opened by independent libraries (openpyxl, python-pptx, python-docx) before it ships.
+- **Vision loop** — `see` renders + screenshots + audits layout so the agent *looks* before delivering.
+
+## Who it's for
+
+**AI agents first, humans second.** Any harness that can run a CLI and parse
+JSON — Claude Code · Cursor · Windsurf · Cline · Aider · OpenCode ·
+Gemini CLI · Codex CLI · Copilot CLI — full operator manual in `AGENTS.md`.
+
+## The 60-second tour
+
+```powershell
+irm https://raw.githubusercontent.com/DERYK-RYLOY/office-brains/main/install.ps1 | iex
+brains doctor
+brains create --spec job.json --type docx -o out.docx --validate
+brains see --spec job.json --type docx -o see.png   # look at it
+```
 
 ## Install
 
@@ -18,7 +52,7 @@ The last Office CLI that ever needs to exist. AI writes intent (OIR JSON),
 **Option B — from source (developers):**
 
 ```powershell
-git clone <your-repo-url>
+git clone https://github.com/DERYK-RYLOY/office-brains.git
 cd office-brains
 go build -o brains ./cmd/brains
 ```

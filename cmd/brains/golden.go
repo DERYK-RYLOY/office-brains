@@ -4,8 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/you/office-brains/internal/oir"
-	"github.com/you/office-brains/internal/surgeon"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/surgeon"
 )
 
 // tryTransplant clones dir/blank.{docx,xlsx,pptx} and swaps safe parts.

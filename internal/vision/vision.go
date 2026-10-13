@@ -8,8 +8,8 @@ package vision
 import (
 	"fmt"
 
-	"github.com/you/office-brains/internal/layout"
-	"github.com/you/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/layout"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
 )
 
 // Issue is one machine-readable layout finding.

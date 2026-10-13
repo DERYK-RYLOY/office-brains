@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/you/office-brains/internal/compiler"
-	"github.com/you/office-brains/internal/forger"
-	"github.com/you/office-brains/internal/oir"
-	"github.com/you/office-brains/internal/surgeon"
+	"github.com/DERYK-RYLOY/office-brains/internal/compiler"
+	"github.com/DERYK-RYLOY/office-brains/internal/forger"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/surgeon"
 )
 
 func TestLearnCompany(t *testing.T) {

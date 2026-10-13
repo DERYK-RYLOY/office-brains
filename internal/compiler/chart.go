@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/you/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
 )
 
 // Truncated records content dropped during the last Build* call

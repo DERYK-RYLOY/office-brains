@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/you/office-brains/internal/oir"
-	"github.com/you/office-brains/internal/preview"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/preview"
 )
 
 // preview: OIR -> self-contained HTML. Pure Go, offline, zero deps.

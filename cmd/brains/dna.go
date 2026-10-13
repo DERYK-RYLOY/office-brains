@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/you/office-brains/internal/dna"
+	"github.com/DERYK-RYLOY/office-brains/internal/dna"
 )
 
 func cmdDNA(args []string) {

@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/you/office-brains/internal/forger"
-	"github.com/you/office-brains/internal/media"
-	"github.com/you/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/forger"
+	"github.com/DERYK-RYLOY/office-brains/internal/media"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
 )
 
 // 16:9 M365 default: 13.33 x 7.5in in EMU (914400 per inch).

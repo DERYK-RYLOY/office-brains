@@ -11,9 +11,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/you/office-brains/internal/oir"
-	"github.com/you/office-brains/internal/preview"
-	"github.com/you/office-brains/internal/vision"
+	"github.com/DERYK-RYLOY/office-brains/internal/oir"
+	"github.com/DERYK-RYLOY/office-brains/internal/preview"
+	"github.com/DERYK-RYLOY/office-brains/internal/vision"
 )
 
 func edgeBinary() string {
