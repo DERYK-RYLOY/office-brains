@@ -7,7 +7,7 @@
 `.docx` / `.xlsx` / `.pptx`.
 
 [![CI](https://github.com/DERYK-RYLOY/office-brains/actions/workflows/ci.yml/badge.svg)](https://github.com/DERYK-RYLOY/office-brains/actions)
-![MIT](https://img.shields.io/badge/license-MIT-green)
+![BSL](https://img.shields.io/badge/license-BSL_1.1-blue)
 ![v0.1.0](https://img.shields.io/badge/version-v0.1.0-blue)
 ![Go](https://img.shields.io/badge/go-1.22%2B_stdlib--only-00ADD8)
 ![Platform](https://img.shields.io/badge/platform-windows_linux-lightgrey)
@@ -195,4 +195,9 @@ golden/           Your blanks live here (empty, git-ignored)
 
 ## License
 
-MIT — see LICENSE.
+Business Source License 1.1 — free for non-production and for contributors
+who submit their work back; production use needs a commercial license.
+Every version converts to Apache 2.0 four years after release. See LICENSE.
+(v0.1.0 remains under its original MIT license.)
+
+Want to help? See CONTRIBUTING.md — issues with repro specs welcome.
