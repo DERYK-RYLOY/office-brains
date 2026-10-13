@@ -6,7 +6,7 @@
 `brains` compiles it into clean, Transitional, forensically-quiet
 `.docx` / `.xlsx` / `.pptx`.
 
-![CI](https://github.com/DERYK-RYLOY/office-brains/actions/workflows/ci/badge.svg)
+[![CI](https://github.com/DERYK-RYLOY/office-brains/actions/workflows/ci/badge.svg)](https://github.com/DERYK-RYLOY/office-brains/actions)
 ![MIT](https://img.shields.io/badge/license-MIT-green)
 ![v0.1.0](https://img.shields.io/badge/version-v0.1.0-blue)
 ![Go](https://img.shields.io/badge/go-1.22%2B_stdlib--only-00ADD8)
@@ -68,23 +68,6 @@ Requires Go 1.22+. No dependencies outside the standard library.
 Windows only today (`oracle setup` fetches the Windows embeddable build;
 Linux/macOS support is planned). Everything else runs anywhere Go runs.
 
-## 60-second tour
-
-```powershell
-# 1. health check
-.\brains doctor
-
-# 2. write a spec (see pkg/spec/example.job.json for the shape)
-.\brains create --spec pkg/spec/example.job.json --type docx -o out.docx --validate
-
-# 3. check what you made
-.\brains validate --file out.docx
-.\brains inspect --file out.docx
-
-# 4. deterministic bytes (same spec -> identical file)
-.\brains create --spec pkg/spec/example.job.json --type docx -o out.docx --frozen
-```
-
 ## OIR — the input contract
 
 Agents never write XML. They write `pkg/spec/oir.schema.json`-validated JSON:
@@ -114,6 +97,9 @@ Sections become sheets (xlsx) / slides (pptx).
 | `forge --file -o` | Replace `docProps` per profile, body byte-identical. Never overwrites in place |
 | `diff --a --b` | Part-level diff with SHA + ignored `docProps` |
 | `preview --spec --type -o` | Self-contained HTML preview, same math as emitters |
+| `shot --html -o` | Headless-Edge PNG screenshot (zero installs) |
+| `see --spec --type -o` | Preview + screenshot + layout audit in one call (VLM eyes) |
+| `oracle setup\|check` | Auto-downloaded strict validators; open files with reference libs |
 | `dna learn <dir> -o` | Learn company/author lineage from a corpus |
 | `serve --port` | Localhost-only inspect/validate API |
 | `doctor` | Environment + engine matrix |
@@ -180,6 +166,7 @@ Never commit licensed Microsoft files.
 ## Repo layout
 
 ```
+AGENTS.md / SKILL.md  Agent operator manual + skill card (start here, agents)
 cmd/brains        CLI (cobra-free, stdlib flags)
 internal/oir      Spec + validation (coded errors)
 internal/compiler docx/xlsx/pptx emitters + charts
@@ -187,10 +174,13 @@ internal/surgeon  Deterministic ZIP + golden transplant
 internal/forger   Metadata (incl. --frozen deterministic mode)
 internal/layout   Column/table width solvers
 internal/verify   Offline checks + optional XSD gate
+internal/vision   Layout audit: overflow rules for the see loop
 internal/patch    RFC6902 subset for specs
 internal/preview  OIR -> HTML (same constants as emitters)
 internal/dna      Corpus lineage learning
 internal/media    PNG/JPEG loading (stdlib)
+oracle/           Strict validators (verify.py, measure.py, diff_png.py)
+assets/           Brand: banner.png hero + logo.png mark
 pkg/spec          oir.schema.json + example specs
 golden/           Your blanks live here (empty, git-ignored)
 ```
@@ -199,6 +189,7 @@ golden/           Your blanks live here (empty, git-ignored)
 
 - Widths are approximations (no glyph shaping); dense sheets can drift low single digits
 - DOCX charts render as data tables; bar/line/pie native on xlsx/pptx
+- No custom fonts (Calibri family), no diagrams/shapes, one header/footer
 - Pixel parity with Word is impossible for any non-Microsoft tool
 - 50 sections, 500 table rows, 20 images, 10 charts, 8MB image caps
 
