@@ -3,6 +3,7 @@
 package oir
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -41,11 +42,12 @@ type Spec struct {
 
 // Meta controls forger profile + doc chrome.
 type Meta struct {
-	Profile string `json:"profile,omitempty"` // m365|corporate|clean
-	Company string `json:"company,omitempty"`
-	Author  string `json:"author,omitempty"`
-	Header  string `json:"header,omitempty"` // docx header text (1.1)
-	Footer  string `json:"footer,omitempty"` // docx footer text (1.1)
+	Profile      string `json:"profile,omitempty"`       // m365|corporate|clean
+	Company      string `json:"company,omitempty"`
+	Author       string `json:"author,omitempty"`
+	Header       string `json:"header,omitempty"`        // docx header text (1.1)
+	Footer       string `json:"footer,omitempty"`        // docx footer text (1.1)
+	FreezeHeader bool   `json:"freeze_header,omitempty"` // xlsx: freeze row 1 on every sheet
 }
 
 // Doc is a list of sections.
@@ -65,7 +67,7 @@ type Section struct {
 // Block is one semantic unit.
 type Block struct {
 	ID     string        `json:"id,omitempty"` // stable ref for patch (1.1)
-	T      string        `json:"t"`            // h1|h2|p|table|bullet|code|image|chart
+	T      string        `json:"t"`            // h1|h2|h3|p|bullet|code|quote|image|chart|table|divider|pagebreak|toc
 	Txt    string        `json:"txt,omitempty"`
 	Rows   [][]Cell      `json:"rows,omitempty"`
 	Merge  []string      `json:"merge,omitempty"` // xlsx table merges like "A1:B1" (1.1)
@@ -129,7 +131,11 @@ func (c *Cell) UnmarshalJSON(b []byte) error {
 
 // ParseAndValidate parses and validates OIR 1.0 (compat) and 1.1 rules.
 // All failures are *CodedError with stable ERR_OIR_* codes.
+// A leading UTF-8/UTF-8-BOM (EF BB BF) and surrounding whitespace are
+// tolerated — agents routinely produce BOM-prefixed files.
 func ParseAndValidate(data []byte) (*Spec, error) {
+	data = bytes.TrimPrefix(data, []byte{0xEF, 0xBB, 0xBF})
+	data = bytes.TrimSpace(data)
 	var s Spec
 	if err := json.Unmarshal(data, &s); err != nil {
 		return nil, coded("ERR_OIR_JSON", "invalid JSON: %v", err)
@@ -167,13 +173,15 @@ func ParseAndValidate(data []byte) (*Spec, error) {
 				seenIDs[k] = true
 			}
 			switch b.T {
-			case "h1", "h2", "p", "bullet", "code":
+			case "h1", "h2", "h3", "p", "bullet", "code", "quote":
 				if b.Txt == "" {
 					return nil, coded("ERR_OIR_MISSING_TXT", "sections[%d].blocks[%d]: type %q needs txt", si, bi, b.T)
 				}
 				if len(b.Txt) > 100000 {
 					return nil, coded("ERR_OIR_TXT_TOO_BIG", "sections[%d].blocks[%d]: txt max 100000 chars, got %d", si, bi, len(b.Txt))
 				}
+			case "divider", "pagebreak", "toc":
+				// no payload
 			case "image":
 				nImages++
 				if nImages > 20 {
@@ -241,7 +249,7 @@ func ParseAndValidate(data []byte) (*Spec, error) {
 					}
 				}
 			default:
-				return nil, coded("ERR_OIR_UNKNOWN_BLOCK", "sections[%d].blocks[%d]: unknown t %q (want h1|h2|p|bullet|code|image|chart|table)", si, bi, b.T)
+				return nil, coded("ERR_OIR_UNKNOWN_BLOCK", "sections[%d].blocks[%d]: unknown t %q (want h1|h2|h3|p|bullet|code|quote|image|chart|table|divider|pagebreak|toc)", si, bi, b.T)
 			}
 		}
 	}

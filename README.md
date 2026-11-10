@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/DERYK-RYLOY/office-brains/actions/workflows/ci.yml/badge.svg)](https://github.com/DERYK-RYLOY/office-brains/actions)
 ![BSL](https://img.shields.io/badge/license-BSL_1.1-blue)
-![v0.1.0](https://img.shields.io/badge/version-v0.1.0-blue)
+![v0.2.0](https://img.shields.io/badge/version-v0.2.0-blue)
 ![Go](https://img.shields.io/badge/go-1.22%2B_stdlib--only-00ADD8)
 ![Platform](https://img.shields.io/badge/platform-windows_linux-lightgrey)
 
@@ -21,10 +21,10 @@ Office Brains fixes the architecture, not the prompt:
 
 - **OIR compiler** — agents describe *what* (JSON), never *how* (XML).
 - **Forensic forge** — real author/company/timestamps, zero `python-docx`-style traces.
-- **Native everything** — tables, `SUM` formulas with cached values, bar/line/pie charts, images, merges, multisheet/multislide.
+- **Native everything** — tables, `SUM` formulas with cached values, bar/line/pie charts in **all three formats** (including native Word charts), images, merges, multisheet/multislide.
 - **Deterministic** — `--frozen` makes the same spec byte-identical, every run.
-- **Oracle squad** — every file re-opened by independent libraries (openpyxl, python-pptx, python-docx) before it ships.
-- **Vision loop** — `see` renders + screenshots + audits layout so the agent *looks* before delivering.
+- **Oracle squad** — every file re-opened by independent libraries (openpyxl, python-pptx, python-docx) before it ships. Now works from binary installs and installs are hash-checked.
+- **Vision loop** — `see` renders + screenshots + audits layout so the agent *looks* before delivering — images and charts included.
 
 ## Who it's for
 
@@ -46,8 +46,14 @@ brains see --spec job.json --type docx -o see.png   # look at it
 **Option A — binary (no Go needed, recommended for most people):**
 
 1. Open the latest GitHub Release, download `brains-windows-amd64.exe`
-   (or `brains-linux-amd64`).
+   (or `brains-linux-amd64`) — or run the one-liner below; it verifies SHA-256
+   against `SHA256SUMS.txt` from the same release and refuses to install on mismatch.
 2. Run `brains doctor`. Done — creating files works fully offline.
+
+Windows: `irm https://raw.githubusercontent.com/DERYK-RYLOY/office-brains/main/install.ps1 | iex`
+Linux: `curl -fsSL https://raw.githubusercontent.com/DERYK-RYLOY/office-brains/main/install.sh | sh`
+
+Override the release tag with `$env:BRAINS_TAG` / `BRAINS_TAG` (default v0.2.0).
 
 **Option B — from source (developers):**
 
@@ -59,14 +65,19 @@ go build -o brains ./cmd/brains
 
 Requires Go 1.22+. No dependencies outside the standard library.
 
-**Oracle (optional, strict checking):** needs one network download, once:
+**Oracle (optional, strict checking):**
 
 ```powershell
-.\brains oracle setup    # portable Python 3.12 + pinned pip packages into .oracle/
+.\brains oracle setup    # portable Python 3.12 + pinned, hash-checked pip packages into .oracle/
 ```
 
-Windows only today (`oracle setup` fetches the Windows embeddable build;
-Linux/macOS support is planned). Everything else runs anywhere Go runs.
+Windows only today (`oracle setup` fetches the Windows embeddable build; downloads
+are SHA-256-pinned and pip runs `--require-hashes`). Binary installs need nothing
+from the repo — the scripts are embedded in the binary and materialized into
+`.oracle/` on first run; root discovery walks upward from the cwd and from the
+exe directory (`BRAINS_ORACLE_ROOT` overrides). On Linux/macOS:
+`pip install --require-hashes -r oracle/requirements-hashes.txt`, then
+`oracle check` finds `python3` on PATH. Everything else runs anywhere Go runs.
 
 ## OIR — the input contract
 
@@ -83,14 +94,14 @@ Agents never write XML. They write `pkg/spec/oir.schema.json`-validated JSON:
 ]}}
 ```
 
-Block types: `h1 h2 p bullet code image chart table`.
-Sections become sheets (xlsx) / slides (pptx).
+Block types: `h1 h2 h3 p bullet code quote divider pagebreak toc image chart table`.
+Sections become sheets (xlsx) / slides (pptx). `pagebreak` starts a new slide in pptx.
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
-| `create --spec --type -o` | Build a file. Flags: `--profile`, `--company`, `--dna`, `--golden`, `--frozen`, `--validate`, `--human` |
+| `create --spec --type -o` | Build a file. Flags: `--profile`, `--company`, `--dna`, `--golden`, `--frozen`, `--validate`, `--strict`, `--human` |
 | `patch --spec --patch -o` | RFC6902 ops (`replace`/`add`/`remove`) on a spec, optional `--type/--out-file/--validate` build |
 | `inspect --file` | Parts + provenance scan |
 | `validate --file [--xsd dir]` | Offline OOXML checks, optional xmllint XSD gate |
@@ -106,6 +117,7 @@ Sections become sheets (xlsx) / slides (pptx).
 
 Output contract: **stdout = JSON data, stderr = logs + `{"ok":false,"error":CODE}`**.
 Stable codes: `ERR_OIR_*`, `ERR_PATCH_*`, `ERR_VALIDATE_FAILED`, `ERR_CREATE_*`.
+Exit codes: `0` ok · `1` validation/oracle failure · `2` usage/spec error · `3` content dropped/truncated (`--strict` on `create`/`patch`).
 `--human` switches stdout to people text. `NO_COLOR=1` respected (no color emitted, ever).
 
 ## Oracle squad (strict third-party validation)
@@ -168,28 +180,31 @@ Never commit licensed Microsoft files.
 ```
 AGENTS.md / SKILL.md  Agent operator manual + skill card (start here, agents)
 cmd/brains        CLI (cobra-free, stdlib flags)
-internal/oir      Spec + validation (coded errors)
-internal/compiler docx/xlsx/pptx emitters + charts
+internal/oir      Spec + validation (coded errors, BOM-tolerant)
+internal/compiler docx/xlsx/pptx emitters + charts + shared slide layout (EMU)
 internal/surgeon  Deterministic ZIP + golden transplant
 internal/forger   Metadata (incl. --frozen deterministic mode)
 internal/layout   Column/table width solvers
 internal/verify   Offline checks + optional XSD gate
-internal/vision   Layout audit: overflow rules for the see loop
+internal/vision   Layout audit: same layout pass as the emitter, translated to issues
 internal/patch    RFC6902 subset for specs
-internal/preview  OIR -> HTML (same constants as emitters)
+internal/preview  OIR -> HTML (data-URI images, inline-SVG charts)
 internal/dna      Corpus lineage learning
 internal/media    PNG/JPEG loading (stdlib)
-oracle/           Strict validators (verify.py, measure.py, diff_png.py)
+oracle/           Strict validators (verify.py, measure.py, diff_png.py) + hash-pinned requirements; embedded in the binary
 assets/           Brand: banner.png hero + logo.png mark
 pkg/spec          oir.schema.json + example specs
 golden/           Your blanks live here (empty, git-ignored)
+CHANGELOG.md      What changed per release
+LICENSE-MIT       MIT text covering v0.1.0 only
 ```
 
 ## Limits (honest)
 
 - Widths are approximations (no glyph shaping); dense sheets can drift low single digits
-- DOCX charts render as data tables; bar/line/pie native on xlsx/pptx
+- PPTX visuals that don't fit are **scaled to fit** the remaining slide space (warned); only genuinely unplaceable ones drop (warned) — `--strict` makes drops exit 3
 - No custom fonts (Calibri family), no diagrams/shapes, one header/footer
+- A `toc` block is a Word TOC field — Word populates it on open (`w:updateFields`); until then it shows placeholder text
 - Pixel parity with Word is impossible for any non-Microsoft tool
 - 50 sections, 500 table rows, 20 images, 10 charts, 8MB image caps
 
@@ -198,6 +213,6 @@ golden/           Your blanks live here (empty, git-ignored)
 Business Source License 1.1 — free for non-production and for contributors
 who submit their work back; production use needs a commercial license.
 Every version converts to Apache 2.0 four years after release. See LICENSE.
-(v0.1.0 remains under its original MIT license.)
+(v0.1.0 remains under its original MIT license — the MIT text ships as `LICENSE-MIT`.)
 
-Want to help? See CONTRIBUTING.md — issues with repro specs welcome.
+Change log: `CHANGELOG.md`. Want to help? See CONTRIBUTING.md — issues with repro specs welcome.

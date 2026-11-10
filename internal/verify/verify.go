@@ -120,6 +120,15 @@ func File(path string) (results []Result, ok bool) {
 			}
 			add("docx_image_embed", hasMedia, "blip has media part")
 		}
+		hasChart := false
+		for n := range parts {
+			if len(n) >= 12 && n[:12] == "word/charts/" && strings.HasSuffix(n, ".xml") {
+				hasChart = true
+			}
+		}
+		if hasChart {
+			add("docx_chart", true, "chart parts present")
+		}
 	case has("xl/workbook.xml"):
 		// xlsx vs pptx share xl/ prefix? pptx uses ppt/. be precise
 		if has("ppt/presentation.xml") {
@@ -230,11 +239,6 @@ func File(path string) (results []Result, ok bool) {
 		if hasChart {
 			add("pptx_chart", true, "chart parts present")
 		}
-	case has("ppt/presentation.xml"):
-		add("type", true, "pptx")
-		pres := parts["ppt/presentation.xml"]
-		add("pptx_sldSz_16x9", strings.Contains(pres, `type="screen16x9"`), "16:9 size tag")
-		add("pptx_slide_exists", has("ppt/slides/slide1.xml"), "slide1 present")
 	default:
 		add("type", false, "unknown: no word/document.xml, xl/workbook.xml, ppt/presentation.xml")
 	}

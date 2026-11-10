@@ -3,7 +3,6 @@ package compiler
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/DERYK-RYLOY/office-brains/internal/forger"
@@ -189,7 +188,8 @@ func BuildXlsx(spec *oir.Spec, meta forger.Props) map[string][]byte {
 			colWidths[c] = layout.MaxWidth(col, true)
 		}
 		hasDrawing := len(sh.imgs) > 0 || len(sh.charts) > 0
-		parts[sheetPart(i)] = []byte(renderXSheetMergesDrawing(sh.rows, uniq, ncols, colWidths, sh.merges, hasDrawing))
+		freeze := spec.Meta != nil && spec.Meta.FreezeHeader
+		parts[sheetPart(i)] = []byte(renderXSheetMergesDrawing(sh.rows, uniq, ncols, colWidths, sh.merges, hasDrawing, freeze))
 		if hasDrawing {
 			dn := i + 1
 			parts[fmt.Sprintf("xl/drawings/drawing%d.xml", dn)] = []byte(xlsxDrawingFull(sh.imgs, sh.charts))
@@ -333,12 +333,18 @@ func sectionXRows(sec oir.Section) ([][]oir.Cell, []string) {
 	merges := []string{}
 	for _, bl := range sec.Blocks {
 		switch bl.T {
-		case "h1", "h2", "p":
+		case "h1", "h2", "h3", "p":
 			out = append(out, []oir.Cell{str(bl.Txt)})
 		case "bullet":
 			out = append(out, []oir.Cell{str("•  " + bl.Txt)})
+		case "quote":
+			out = append(out, []oir.Cell{str("“" + bl.Txt + "”")})
 		case "code":
 			out = append(out, []oir.Cell{str(bl.Txt)})
+		case "divider":
+			out = append(out, []oir.Cell{str("────────────────────────")})
+		case "pagebreak", "toc":
+			// page/slide-oriented blocks; no spreadsheet equivalent
 		case "image":
 			alt := bl.Alt
 			if alt == "" {
@@ -410,27 +416,11 @@ func xDisplay(c oir.Cell) string {
 	return cellString(c.V)
 }
 
-func xlsxContentTypesN(n int) string {
-	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" +
-		`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
-		`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
-		`<Default Extension="xml" ContentType="application/xml"/>` +
-		`<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`)
-	for i := 0; i < n; i++ {
-		fmt.Fprintf(&b, `<Override PartName="/xl/worksheets/sheet%d.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`, i+1)
-	}
-	b.WriteString(`<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>` +
-		`<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
-		`<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>` +
-		`<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>` +
-		`</Types>`)
-	return b.String()
-}
+
 
 // renderXSheetMergesDrawing adds drawing ref + merges in schema order.
-func renderXSheetMergesDrawing(rows [][]oir.Cell, uniq map[string]int, ncols int, widths []float64, merges []string, hasDrawing bool) string {
-	base := renderXSheet(rows, uniq, ncols, widths)
+func renderXSheetMergesDrawing(rows [][]oir.Cell, uniq map[string]int, ncols int, widths []float64, merges []string, hasDrawing bool, freeze bool) string {
+	base := renderXSheet(rows, uniq, ncols, widths, freeze)
 	if hasDrawing {
 		base = strings.Replace(base, `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`, `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">`, 1)
 		base = strings.Replace(base, `</worksheet>`, `<drawing r:id="rId1"/></worksheet>`, 1)
@@ -501,42 +491,7 @@ func xlsxContentTypesDrawingsCharts(n int, drawSheets []int, chartNames map[int]
 	return b.String()
 }
 
-func xlsxContentTypesDrawings(n int, drawSheets []int) string {
-	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" +
-		`<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">` +
-		`<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>` +
-		`<Default Extension="xml" ContentType="application/xml"/>` +
-		`<Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="jpeg" ContentType="image/jpeg"/>` +
-		`<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>`)
-	for i := 0; i < n; i++ {
-		fmt.Fprintf(&b, `<Override PartName="/xl/worksheets/sheet%d.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`, i+1)
-	}
-	for _, dn := range drawSheets {
-		fmt.Fprintf(&b, `<Override PartName="/xl/drawings/drawing%d.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`, dn)
-	}
-	b.WriteString(`<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>` +
-		`<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>` +
-		`<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>` +
-		`<Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>` +
-		`</Types>`)
-	return b.String()
-}
 
-// renderXSheetMerges wraps renderXSheet with mergeCells.
-func renderXSheetMerges(rows [][]oir.Cell, uniq map[string]int, ncols int, widths []float64, merges []string) string {
-	base := renderXSheet(rows, uniq, ncols, widths)
-	if len(merges) == 0 {
-		return base
-	}
-	// insert <mergeCells> before </worksheet>
-	mc := `<mergeCells count="` + itoa(len(merges)) + `">`
-	for _, m := range merges {
-		mc += `<mergeCell ref="` + esc(m) + `"/>`
-	}
-	mc += `</mergeCells>`
-	return strings.Replace(base, `</worksheet>`, mc+`</worksheet>`, 1)
-}
 
 func xlsxRootRels() string {
 	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n" +
@@ -571,12 +526,16 @@ func renderSharedStringsCount(ordered []string, strCount int) string {
 }
 
 // renderXSheet emits typed cells: numbers, bools, shared strings, formulas+cached values.
-func renderXSheet(rows [][]oir.Cell, uniq map[string]int, ncols int, widths []float64) string {
+func renderXSheet(rows [][]oir.Cell, uniq map[string]int, ncols int, widths []float64, freeze bool) string {
 	var b strings.Builder
+	view := `<sheetView workbookViewId="0"/>`
+	if freeze {
+		view = `<sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/></sheetView>`
+	}
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n")
 	b.WriteString(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="`)
 	b.WriteString(dimRef(len(rows), ncols))
-	b.WriteString(`"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormat defaultRowHeight="15"/>`)
+	b.WriteString(`"/><sheetViews>` + view + `</sheetViews><sheetFormat defaultRowHeight="15"/>`)
 	b.WriteString(`<cols>`)
 	for i, w := range widths {
 		fmt.Fprintf(&b, `<col min="%d" max="%d" width="%.2f" customWidth="1"/>`, i+1, i+1, w)
@@ -652,41 +611,6 @@ func numStr(f float64) string {
 	return fmt.Sprint(f)
 }
 
-func renderSheet(rows [][]string, uniq map[string]int, ncols int, widths []float64) string {
-	var b strings.Builder
-	b.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` + "\n")
-	b.WriteString(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="`)
-	b.WriteString(dimRef(len(rows), ncols))
-	b.WriteString(`"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormat defaultRowHeight="15"/>`)
-	// cols with calculated widths (never auto)
-	b.WriteString(`<cols>`)
-	for i, w := range widths {
-		fmt.Fprintf(&b, `<col min="%d" max="%d" width="%.2f" customWidth="1"/>`, i+1, i+1, w)
-	}
-	b.WriteString(`</cols><sheetData>`)
-	for ri, r := range rows {
-		fmt.Fprintf(&b, `<row r="%d">`, ri+1)
-		for ci := 0; ci < ncols; ci++ {
-			val := ""
-			if ci < len(r) {
-				val = r[ci]
-			}
-			if val == "" {
-				continue // skip empty cells (sparse)
-			}
-			ref := colName(ci) + fmt.Sprint(ri+1)
-			style := 0
-			// bold first row of each table-ish area? bootstrap: bold row 1 + any h1 rows (single-col short)
-			if ri == 0 {
-				style = 1
-			}
-			fmt.Fprintf(&b, `<c r="%s" s="%d" t="s"><v>%d</v></c>`, ref, style, uniq[val])
-		}
-		b.WriteString(`</row>`)
-	}
-	b.WriteString(`</sheetData></worksheet>`)
-	return b.String()
-}
 
 func dimRef(nrows, ncols int) string {
 	if nrows == 0 {
@@ -707,5 +631,3 @@ func colName(i int) string {
 	return s
 }
 
-// sortedKeys helper kept for future diff tool (used to avoid unused import drift).
-var _ = sort.Strings

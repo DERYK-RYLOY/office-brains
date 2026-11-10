@@ -18,7 +18,14 @@ import (
 	"github.com/DERYK-RYLOY/office-brains/internal/verify"
 )
 
-const version = "v0.1.0"
+const version = "v0.2.0"
+
+// newFlagSet returns a flag set with stderr logs (house style).
+func newFlagSet(name string) *flag.FlagSet {
+	fs := flag.NewFlagSet(name, flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	return fs
+}
 
 func emitJSON(v any) {
 	enc := json.NewEncoder(os.Stdout)
@@ -117,7 +124,7 @@ func main() {
 func printUsage() {
 	logHuman(`brains %s - Office Brains (JSON default, --human for people)
 Usage:
-  brains create --spec <file|-> --type docx|xlsx|pptx -o <out> [--profile m365] [--dna dna.json] [--golden dir] [--frozen] [--validate] [--human] [--no-color]
+  brains create --spec <file|-> --type docx|xlsx|pptx -o <out> [--profile m365] [--dna dna.json] [--golden dir] [--frozen] [--validate] [--strict] [--human] [--no-color]
   brains patch --spec base.json --patch ops.json -o patched.json [--type docx --out-file out.docx --validate] [--human]
   brains inspect --file <f> [--human] [--no-color]
   brains validate --file <f> [--human]
@@ -130,6 +137,7 @@ Usage:
   brains serve --port 3000
   brains doctor [--human]
 Errors: stable codes ERR_OIR_*, ERR_PATCH_*, ERR_VALIDATE_FAILED to stderr as {"ok":false,"error":CODE}.
+Exit codes: 0 ok | 1 validation/oracle failure | 2 usage/spec error | 3 content dropped/truncated (--strict).
 NO_COLOR=1 respected (no color codes emitted ever).`, version)
 }
 
@@ -146,6 +154,7 @@ func cmdCreate(args []string) {
 	goldenDir := fs.String("golden", "", "dir with blank.docx/xlsx/pptx for transplant (fallback: clean build)")
 	doValidate := fs.Bool("validate", false, "run verify after build, include checks, fail non-zero if bad")
 	frozen := fs.Bool("frozen", false, "byte-deterministic output (fixed clock + counter IDs)")
+	strict := fs.Bool("strict", false, "exit 3 when any content was dropped/truncated (default: exit 0 with \"truncated\":true in JSON)")
 	human := fs.Bool("human", false, "human output to stdout instead of JSON")
 	noColor := fs.Bool("no-color", false, "disable color (also respects NO_COLOR=1)")
 	asJSON := fs.Bool("json", true, "emit JSON to stdout")
@@ -257,8 +266,16 @@ func cmdCreate(args []string) {
 		logHuman("transplant: golden clone (%s)", transplantNote)
 	}
 	warns := compiler.Truncated
+	truncated := len(warns) > 0
 	for _, w := range warns {
 		logHuman("WARN: %s", w)
+	}
+	if *strict && truncated {
+		emitErr("ERR_CREATE_TRUNCATED", fmt.Errorf("%d content item(s) dropped or truncated; see warnings", len(warns)))
+		emitJSON(map[string]any{"ok": false, "command": "create", "data": map[string]any{
+			"out": absOut, "type": *docType, "truncated": true, "warnings": warns,
+		}})
+		os.Exit(3)
 	}
 	if *doValidate {
 		results, ok := verify.File(absOut)
@@ -279,7 +296,7 @@ func cmdCreate(args []string) {
 				"spec_valid": true, "oir": spec.OIR, "blocks": spec.CountBlocks(),
 				"type": *docType, "out": absOut, "written": true, "bytes": len(blob),
 				"parts": surgeon.List(parts), "profile": string(meta.Profile), "checks": results,
-				"transplanted": transplanted, "warnings": warns,
+				"transplanted": transplanted, "warnings": warns, "truncated": truncated,
 			},
 		})
 		return
@@ -303,6 +320,7 @@ func cmdCreate(args []string) {
 			"profile":    string(meta.Profile),
 			"transplanted": transplanted,
 			"warnings":   warns,
+			"truncated":  truncated,
 		},
 	})
 }

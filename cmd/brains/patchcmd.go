@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -26,6 +27,7 @@ func cmdPatch(args []string) {
 	outFile := fs.String("out-file", "", "optional: output Office file path (needs --type)")
 	doValidate := fs.Bool("validate", false, "validate built file (needs --type)")
 	frozen := fs.Bool("frozen", false, "byte-deterministic output")
+	strict := fs.Bool("strict", false, "exit 3 when a built file dropped/truncated content")
 	human := fs.Bool("human", false, "human output to stdout instead of JSON")
 	noColor := fs.Bool("no-color", false, "disable color (also respects NO_COLOR=1)")
 	_ = noColor
@@ -99,6 +101,16 @@ func cmdPatch(args []string) {
 			os.Exit(1)
 		}
 		builtOut = absB
+		if *strict && len(compiler.Truncated) > 0 {
+			emitErr("ERR_CREATE_TRUNCATED", fmt.Errorf("%d content item(s) dropped or truncated; see warnings", len(compiler.Truncated)))
+			for _, w := range compiler.Truncated {
+				logHuman("WARN: %s", w)
+			}
+			emitJSON(map[string]any{"ok": false, "command": "patch", "data": map[string]any{
+				"spec": absOut, "built": builtOut, "truncated": true, "warnings": compiler.Truncated,
+			}})
+			os.Exit(3)
+		}
 		if *doValidate {
 			results, ok := verify.File(absB)
 			checks = results

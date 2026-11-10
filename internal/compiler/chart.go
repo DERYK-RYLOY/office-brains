@@ -19,6 +19,10 @@ func warn(format string, a ...any) {
 
 func resetWarnings() { Truncated = nil }
 
+// ResetTruncated clears recorded truncation warnings (used by the preview
+// renderer, which reuses the layout pass but is not a build).
+func ResetTruncated() { Truncated = nil }
+
 var chartPalette = []string{"4472C4", "ED7D31", "A5A5A5", "FFC000", "5B9BD5", "70AD47", "264478", "E15728"}
 
 // BarChartXML renders a clustered column chart with inline literals (no cell refs).
@@ -102,6 +106,11 @@ func pieChartXML(title string, labels []string, series []oir.ChartSeries) string
 			nm = fmt.Sprintf("Series %d", i+1)
 		}
 		fmt.Fprintf(&b, `<c:ser><c:idx val="%d"/><c:order val="%d"/><c:tx><c:v>%s</c:v></c:tx>`, i, i, esc(nm))
+		// one dPt per slice: varyColors with no explicit colors renders a
+		// single-color pie in several renderers
+		for pi := range labels {
+			fmt.Fprintf(&b, `<c:dPt><c:idx val="%d"/><c:spPr><a:solidFill><a:srgbClr val="%s"/></a:solidFill></c:spPr></c:dPt>`, pi, chartPalette[(i*3+pi)%len(chartPalette)])
+		}
 		fmt.Fprintf(&b, `<c:cat><c:strLit><c:ptCount val="%d"/>`, len(labels))
 		for li, lb := range labels {
 			fmt.Fprintf(&b, `<c:pt idx="%d"><c:v>%s</c:v></c:pt>`, li, esc(lb))

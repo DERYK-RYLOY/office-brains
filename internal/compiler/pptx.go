@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/DERYK-RYLOY/office-brains/internal/forger"
-	"github.com/DERYK-RYLOY/office-brains/internal/media"
 	"github.com/DERYK-RYLOY/office-brains/internal/oir"
 )
 
@@ -22,77 +21,28 @@ const (
 func BuildPptx(spec *oir.Spec, meta forger.Props) map[string][]byte {
 	resetWarnings()
 	meta.Defaults("Microsoft Office PowerPoint")
+	// pagebreak block: split the section into two slides at that point.
+	sections := expandPageBreaks(spec.Doc.Sections)
+	n := len(sections)
 	meta.Words = countWords(spec)
-	meta.Pages = len(spec.Doc.Sections)
+	meta.Pages = n
 	if meta.Pages < 1 {
 		meta.Pages = 1
 	}
-	n := len(spec.Doc.Sections)
 	type pimg = pptImg
 	type pchart = pptChart
 	slideImgs := make([][]pimg, n)
 	slideCharts := make([][]pchart, n)
 	mediaCounter := 0
 	chartCounter := 0
-	// layout pass: tables height + image/chart stacking per slide
-	for si, sec := range spec.Doc.Sections {
-		// estimate tables height like renderSlide: each table rows*320000
-		tablesH := int64(0)
-		for _, bl := range sec.Blocks {
-			if bl.T == "table" {
-				tablesH += int64(len(bl.Rows))*320000 + 200000
-			}
+	// layout pass: EMU placement for images/charts (shared with the preview)
+	for si, sec := range sections {
+		vimgs, vcharts := LayoutSlideVisuals(sec, si, &mediaCounter, &chartCounter)
+		for _, vi := range vimgs {
+			slideImgs[si] = append(slideImgs[si], pimg{data: vi.Data, ext: vi.Ext, alt: vi.Alt, cx: vi.Cx, cy: vi.Cy, x: vi.X, y: vi.Y, name: vi.Name})
 		}
-		y := int64(1554480+2000000) + tablesH
-		for _, bl := range sec.Blocks {
-			if bl.T != "image" {
-				continue
-			}
-			m, err := media.Load(bl.Img)
-			if err != nil {
-				warn("slide %d: image %q not embedded (%v)", si+1, bl.Img, err)
-				continue
-			}
-			wIn := bl.W
-			if wIn == 0 {
-				wIn = 4.0
-			}
-			if wIn > 10 {
-				wIn = 10
-			}
-			cx, cy := media.EMUSize(wIn, m.WPx, m.HPx)
-			if cy > 2500000 {
-				cy = 2500000
-				cx = cy * int64(m.WPx) / int64(m.HPx)
-			}
-			if cx > 11273880 {
-				cx = 11273880
-				cy = cx * int64(m.HPx) / int64(m.WPx)
-			}
-			x := (12192000 - cx) / 2
-			if y+cy > pptCY-200000 {
-				warn("slide %d: image %q dropped (slide full, split content across sections)", si+1, bl.Alt)
-				continue // try next block; y unchanged
-			}
-			mediaCounter++
-			nm := fmt.Sprintf("ppt/media/image%d.%s", mediaCounter, m.Ext)
-			slideImgs[si] = append(slideImgs[si], pimg{data: m.Data, ext: m.Ext, alt: bl.Alt, cx: cx, cy: cy, x: x, y: y, name: nm})
-			y += cy + 200000
-		}
-		for _, bl := range sec.Blocks {
-			if bl.T != "chart" {
-				continue
-			}
-			cx, cy := int64(8000000), int64(2800000)
-			x := (12192000 - cx) / 2
-			if y+cy > pptCY-200000 {
-				warn("slide %d: chart %q dropped (slide full, split content across sections)", si+1, bl.Title)
-				continue
-			}
-			chartCounter++
-			nm := fmt.Sprintf("ppt/charts/chart%d.xml", chartCounter)
-			slideCharts[si] = append(slideCharts[si], pchart{title: bl.Title, kind: bl.Kind, labels: bl.Labels, series: bl.Series, x: x, y: y, cx: cx, cy: cy, name: nm})
-			y += cy + 200000
+		for _, vc := range vcharts {
+			slideCharts[si] = append(slideCharts[si], pchart{title: vc.Title, kind: vc.Kind, labels: vc.Labels, series: vc.Series, x: vc.X, y: vc.Y, cx: vc.Cx, cy: vc.Cy, name: vc.Name})
 		}
 	}
 	hasMedia := mediaCounter > 0
@@ -116,7 +66,7 @@ func BuildPptx(spec *oir.Spec, meta forger.Props) map[string][]byte {
 		"docProps/core.xml":                             forger.CoreXML(meta),
 		"docProps/app.xml":                              forger.AppXML(meta, 8),
 	}
-	for i, sec := range spec.Doc.Sections {
+	for i, sec := range sections {
 		parts["ppt/slides/slide"+itoa(i+1)+".xml"] = []byte(renderSectionSlideFull(sec, slideImgs[i], slideCharts[i]))
 		parts["ppt/slides/_rels/slide"+itoa(i+1)+".xml.rels"] = []byte(pptxSlideRelsFull(slideImgs[i], slideCharts[i]))
 	}
@@ -396,12 +346,20 @@ func renderSlide(spec *oir.Spec) string {
 				}
 			case "h2":
 				bodyParas = append(bodyParas, pptPara{Text: bl.Txt, Bold: true, Size: 2400})
+			case "h3":
+				bodyParas = append(bodyParas, pptPara{Text: bl.Txt, Bold: true, Size: 2000})
 			case "p":
 				bodyParas = append(bodyParas, pptPara{Text: bl.Txt, Size: 1800})
 			case "bullet":
 				bodyParas = append(bodyParas, pptPara{Text: "•  " + bl.Txt, Size: 1800, Bullet: true})
+			case "quote":
+				bodyParas = append(bodyParas, pptPara{Text: "“" + bl.Txt + "”", Size: 1800, Mono: false})
+			case "divider":
+				bodyParas = append(bodyParas, pptPara{Text: "────────────────────────────", Size: 1200})
 			case "code":
 				bodyParas = append(bodyParas, pptPara{Text: bl.Txt, Size: 1600, Mono: true})
+			case "toc":
+				warn("pptx: toc block not supported (docx only); block skipped")
 			case "table":
 				cp := make([][]oir.Cell, len(bl.Rows))
 				for i, r := range bl.Rows {
@@ -541,4 +499,31 @@ func pptShape(id int, name string, x, y, cx, cy int64, paras []pptPara) string {
 	}
 	b.WriteString(`</p:txBody></p:sp>`)
 	return b.String()
+}
+
+// expandPageBreaks splits sections at pagebreak blocks. Each segment becomes
+// a slide; empty segments are dropped. Names carry over; only the first
+// segment keeps the section ID.
+func expandPageBreaks(in []oir.Section) []oir.Section {
+	out := []oir.Section{}
+	for _, sec := range in {
+		cur := oir.Section{ID: sec.ID, Name: sec.Name}
+		for _, bl := range sec.Blocks {
+			if bl.T == "pagebreak" {
+				if len(cur.Blocks) > 0 {
+					out = append(out, cur)
+				}
+				cur = oir.Section{Name: sec.Name}
+				continue
+			}
+			cur.Blocks = append(cur.Blocks, bl)
+		}
+		if len(cur.Blocks) > 0 {
+			out = append(out, cur)
+		}
+	}
+	if len(out) == 0 {
+		out = in
+	}
+	return out
 }

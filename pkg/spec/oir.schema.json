@@ -13,7 +13,8 @@
         "company": { "type": "string" },
         "author": { "type": "string" },
         "header": { "type": "string" },
-        "footer": { "type": "string" }
+        "footer": { "type": "string" },
+        "freeze_header": { "type": "boolean" }
       }
     },
     "doc": {
@@ -38,7 +39,7 @@
                   "required": ["t"],
                   "properties": {
                     "id": { "type": "string" },
-                    "t": { "type": "string", "enum": ["h1", "h2", "p", "bullet", "code", "image", "chart", "table"] },
+                    "t": { "type": "string", "enum": ["h1", "h2", "h3", "p", "bullet", "code", "quote", "image", "chart", "table", "divider", "pagebreak", "toc"] },
                     "txt": { "type": "string" },
                     "rows": {
                       "type": "array",

@@ -7,7 +7,9 @@ package vision
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/DERYK-RYLOY/office-brains/internal/compiler"
 	"github.com/DERYK-RYLOY/office-brains/internal/layout"
 	"github.com/DERYK-RYLOY/office-brains/internal/oir"
 )
@@ -87,27 +89,29 @@ func Issues(spec *oir.Spec, docType string) []Issue {
 		}
 	case "pptx":
 		for si, sec := range spec.Doc.Sections {
-			tablesH := int64(0)
-			nTables, nCharts, nImages := 0, 0, 0
+			// reuse the emitter's layout pass verbatim so audit, emitter and
+			// preview can never disagree; translate its warnings into issues
+			mc, cc := 0, 0
+			vimgs, vcharts := compiler.LayoutSlideVisuals(sec, si, &mc, &cc)
+			nTables := 0
 			for _, bl := range sec.Blocks {
-				switch bl.T {
-				case "table":
+				if bl.T == "table" {
 					nTables++
-					tablesH += int64(len(bl.Rows))*320000 + 200000
-				case "chart":
-					nCharts++
-				case "image":
-					nImages++
 				}
 			}
-			// body(1800000) + tables + images(2500000 max) + charts(2800000) vs 5303520 avail
-			used := int64(1800000) + tablesH + int64(nImages)*2700000 + int64(nCharts)*3000000
-			if used > 5303520 {
-				out = append(out, Issue{"pptx.slide_full", "error",
-					fmt.Sprintf("section %d (%d tables, %d images, %d charts): needs ~%d EMU, slide fits ~5303520 - split across sections or visuals WILL drop", si+1, nTables, nImages, nCharts, used)})
-			} else if nTables+nImages+nCharts > 2 {
+			for _, w := range compiler.Truncated {
+				if strings.Contains(w, "dropped") {
+					out = append(out, Issue{"pptx.visual_dropped", "error", w})
+				} else if strings.Contains(w, "scaled") {
+					out = append(out, Issue{"pptx.visual_scaled", "warn", w})
+				} else if strings.Contains(w, "not embedded") {
+					out = append(out, Issue{"pptx.image_missing", "warn", w})
+				}
+			}
+			compiler.ResetTruncated()
+			if nVisuals := nTables + len(vimgs) + len(vcharts); nVisuals > 2 {
 				out = append(out, Issue{"pptx.crowded", "warn",
-					fmt.Sprintf("section %d: %d visuals on one slide - tight but fits", si+1, nTables+nImages+nCharts)})
+					fmt.Sprintf("section %d: %d visuals on one slide - tight but fits", si+1, nVisuals)})
 			}
 		}
 	}
@@ -121,12 +125,16 @@ func flatRows(sec oir.Section) ([][]oir.Cell, bool) {
 	out := [][]oir.Cell{}
 	for _, bl := range sec.Blocks {
 		switch bl.T {
-		case "h1", "h2", "p", "bullet", "code":
-			t := bl.Txt
-			if bl.T == "bullet" {
-				t = "•  " + t
-			}
-			out = append(out, []oir.Cell{{V: t}})
+		case "h1", "h2", "h3", "p":
+			out = append(out, []oir.Cell{{V: bl.Txt}})
+		case "bullet":
+			out = append(out, []oir.Cell{{V: "•  " + bl.Txt}})
+		case "quote":
+			out = append(out, []oir.Cell{{V: "“" + bl.Txt + "”"}})
+		case "divider":
+			out = append(out, []oir.Cell{{V: "────────────────────────"}})
+		case "code":
+			out = append(out, []oir.Cell{{V: bl.Txt}})
 		case "image":
 			out = append(out, []oir.Cell{{V: "[image]"}})
 		case "chart":
