@@ -21,7 +21,10 @@ New-Item -ItemType Directory -Path $DestDir -Force | Out-Null
 
 Write-Host "Fetching SHA256SUMS.txt for $Tag..."
 try {
-    $sumsText = (Invoke-WebRequest -Uri "$Base/SHA256SUMS.txt" -UseBasicParsing).Content
+    $tmpSums = Join-Path $env:TEMP ("SHA256SUMS-" + [guid]::NewGuid().ToString('N') + ".txt")
+    Invoke-WebRequest -Uri "$Base/SHA256SUMS.txt" -OutFile $tmpSums
+    $sumsText = Get-Content $tmpSums -Raw
+    Remove-Item $tmpSums -Force
 } catch {
     Write-Error "could not download SHA256SUMS.txt from $Tag - aborting. $_"
     exit 1
