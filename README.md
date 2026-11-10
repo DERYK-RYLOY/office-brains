@@ -157,8 +157,10 @@ Humans catch "looks off" instantly; blind agents can't. The loop:
 
 - `see` = `preview` + headless Edge screenshot + `vision.Issues` audit.
   Single round trip: pixels for the VLM, rules for the code.
-- Rules today: `pptx.slide_full` (error, with EMU math), `pptx.crowded`,
-  `xlsx.wide_col/grid`, `docx.many_cols/long_cell`, plus `layout.clean`.
+- Rules today: `pptx.visual_dropped` (error — content WILL drop),
+  `pptx.visual_scaled` (warn — shrunk to fit), `pptx.image_missing`,
+  `pptx.crowded`, `xlsx.wide_col/grid`, `docx.many_cols/long_cell`,
+  plus `layout.clean`.
 - `oracle/diff_png.py` diffs before/after PNGs (changed %, bbox) to prove
   the fix worked visually.
 - Honest limit: the VLM sees the faithful preview (same constants as the
